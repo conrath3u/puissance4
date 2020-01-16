@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="https://threejs.org/build/three.js"></script>
+</head>
+
+<style>
+input, button{
+  float: left;
+}
+
+rect:hover {
+  stroke: gold !important;
+}
+</style>
+
+<body>
+  <span>Lignes</span> <span> Colonnes </span>
+  <br>
+  <input id="lignes" type="number" value="6">
+  <input id="colonnes" type="number" value="7">
+  <br><br>
+  <button id="btnCharger" onclick="charger()"> Charger la grille </button><button id="btnChargerPro" onclick="cube()">
+    Charger le mode expert </button> <button id="btnIa" onclick="activeIa()">IA</button>
+
+  <br><br><br>
+  <input id="couleur1" type="color" value="#ff0000">
+  <input type="text" id="nom1" name="name" placeholder="Joueur 1">
+  <br>
+  <p id="textVictoire1"> Nombre de victoire: 0</p>
+  <br><br>
+  <input id="couleur2" type="color" value="#ffff00">
+  <input type="text" id="nom2" name="name" placeholder="Joueur 2">
+  <br>
+  <p id="textVictoire2"> Nombre de victoire: 0</p>
+  <br>
+  <button onclick="reset()"> Rejouer </button>
+</body>
+
+<script>
+  //Affiche un cube en 3D
+  function cube() {
+    if (confirm("êtes vous sûr ?")) {
+      btnCharger = document.querySelector("#btnCharger");
+      btnCharger.setAttribute('disabled', 'disabled');
+      btnChargerPro = document.querySelector("#btnChargerPro");
+      btnChargerPro.setAttribute('disabled', 'disabled');
+      btnIa = document.querySelector("#btnIa");
+      btnIa.setAttribute('disabled', 'disabled');
+     
+
+      var scene = new THREE.Scene();
+      var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      var geometry = new THREE.BoxGeometry(1, 1, 1);
+      var material = new THREE.MeshBasicMaterial({ color: 0x3db9c2 });
+      var cube = new THREE.Mesh(geometry, material);
+      scene.add(cube);
+
+      camera.position.z = 5;
+
+      var animate = function () {
+        requestAnimationFrame(animate);
+
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.01;
+
+        renderer.render(scene, camera);
+      };
+      animate();
+    }
+  }
+
+  //Initialisation variables
+  var joueur = 1;
+  var ia = false;
+  var victoire_boolean = false;
+  var compteur_victoire1 = 0;
+  var compteur_victoire2 = 0;
+  var nbLignes;
+  var nbColonnes;
+
+  //compteur compte le nombre de jetons dans chaque colonnes
+  var compteur = new Array();
+  var grille = new Array();
+
+  //Active ou désactive l'IA
+  function activeIa(){
+    if(ia){
+      alert("ia désactivée");
+      ia = false;
+    }
+    else{
+      alert("ia activée");
+      ia = true;
+    }
+  }
+
+  //Initialise la grille avec les paramètres données par l'utilisateur
+  function charger() {
+    nbLignes = document.querySelector('#lignes').value;
+    nbColonnes = document.querySelector('#colonnes').value;
+
+    for (var i = 0; i <= nbColonnes - 1; i++) {
+      compteur[i] = 0;
+    }
+
+    for (i = 0; i <= nbColonnes - 1; i++) {
+      grille[i] = new Array();
+    }
+
+    for (var i = 0; i <= nbColonnes - 1; i++) {
+      for (var j = 0; j <= nbLignes - 1; j++) {
+        grille[i][j] = "noir";
+      }
+    }
+
+    btnCharger = document.querySelector("#btnCharger");
+    btnCharger.setAttribute('disabled', 'disabled');
+    btnChargerPro = document.querySelector("#btnChargerPro");
+    btnChargerPro.setAttribute('disabled', 'disabled');
+    btnIa = document.querySelector("#btnIa");
+      btnIa.setAttribute('disabled', 'disabled');
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '2000');
+    svg.setAttribute('height', '2000');
+    document.body.appendChild(svg);
+    cx = 0;
+    cy = 0;
+    rx = 95;
+    ry = 55;
+    for (var i = 0; i <= nbColonnes - 1; i++) {
+      cx = cx + 150;
+      cy = 0;
+
+      for (var j = nbLignes - 1; j >= 0; j--) {
+        var cercle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        cy = cy + 110;
+        cercle.setAttribute('cx', cx);
+        cercle.setAttribute('cy', cy);
+        cercle.setAttribute('r', '50');
+        cercle.setAttribute('class', 'cercle');
+        cercle.setAttribute('id', `r${i}c${j}`);
+        svg.appendChild(cercle);
+      }
+
+      var rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rectangle.setAttribute('x', rx);
+      rectangle.setAttribute('y', ry);
+      rectangle.setAttribute('width', 110);
+      rectangle.setAttribute('height', 660);
+      rectangle.setAttribute('stroke', "black");
+      rectangle.setAttribute('stroke-width', "3");
+      rectangle.setAttribute('fill-opacity', "0");
+      rectangle.setAttribute('onclick', `tour(${i})`);
+      svg.appendChild(rectangle);
+      rx = rx + 150;
+    }
+  }
+
+  //Récupère la couleur du joueur 1
+  colorPicker1 = document.querySelector("#couleur1");
+  colorPicker1.addEventListener("change", watchColorPicker1, false);
+  colorPicker1.select();
+  couleur1 = "#ff0000";
+  function watchColorPicker1(event) {
+    couleur1 = event.target.value;
+  }
+
+  //Récupère le nom du joueur 2
+  nameInput1 = document.querySelector("#nom1");
+  nameInput1.addEventListener("change", watchNameInput1, false);
+  nameInput1.select();
+  name1 = "joueur 1";
+  function watchNameInput1(event) {
+    name1 = event.target.value;
+  }
+
+  colorPicker2 = document.querySelector("#couleur2");
+  colorPicker2.addEventListener("change", watchColorPicker2, false);
+  colorPicker2.select();
+  couleur2 = "#ffff00";
+  function watchColorPicker2(event) {
+    couleur2 = event.target.value;
+  }
+
+  nameInput2 = document.querySelector("#nom2");
+  nameInput2.addEventListener("change", watchNameInput2, false);
+  nameInput2.select();
+  name2 = "joueur 2";
+  function watchNameInput2(event) {
+    name2 = event.target.value;
+  }
+
+  //Génère un entier aléatoire compris entre 2 nombres
+  function getRandomIntInclusive(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min +1)) + min;
+}
+
+  //Mets à jour la grille après un click et fait jouer l'IA si elle est activée.
+  //Appel également victoire() pour tester si la partie est finie
+  function tour(index) {
+    if (victoire_boolean != true) {
+      //Test si la colonne choisis n'est pas pleine
+      if (compteur[index] <= nbLignes - 1) {
+        var i = document.getElementById(`r${index}c${compteur[index]}`);
+        if (joueur == 1) {
+          i.style.fill = couleur1;
+          grille[index][compteur[index]] = "rouge";
+          compteur[index]++;
+          
+          //Si ia
+          if(ia){
+            let i = getRandomIntInclusive(0, nbLignes - 1);
+            if(grille[i][compteur[i]] == "noir"){
+              var z = document.getElementById(`r${i}c${compteur[i]}`);
+              z.style.fill = couleur2;
+              grille[i][compteur[i]] = "jaune";
+              compteur[i]++;
+            }
+          }
+          //sinon joueur 2
+          else{
+            joueur = 2;
+          }
+
+          
+        }
+        else {
+          i.style.fill = couleur2;
+          grille[index][compteur[index]] = "jaune";
+          compteur[index]++;
+          joueur = 1;
+        }
+        
+        victoire();
+      }
+      else {
+        alert("Cette colonne est pleine !")
+      }
+    }
+
+  }
+
+  //Réinitialise la grille pour une nouvelle manche
+  function reset() {
+    for (var i = 0; i <= nbColonnes - 1; i++) {
+      for (var j = 0; j <= nbLignes - 1; j++) {
+        grille[i][j] = "noir";
+        compteur[i] = 0;
+        document.querySelectorAll('.cercle').forEach(elt => elt.style.fill = "#000000");
+        victoire_boolean = false;
+      }
+
+    }
+  }
+
+  //Test si un des joueur à gagné
+  //Si oui, la partie est fini sinon elle continue
+  function victoire() {
+    //Test horizontale
+    var countRouge = 0;
+    var countJaune = 0;
+    for (let j = 0; j <= nbLignes - 1; j++) {
+      for (let i = 0; i <= nbColonnes - 1; i++) {
+        countRouge = (grille[i][j] == "rouge") ? countRouge + 1 : 0;
+        countJaune = (grille[i][j] == "jaune") ? countJaune + 1 : 0;
+        if (countRouge >= 4) {
+          alert(`Victoire de ${name1}`);
+          compteur_victoire1 = compteur_victoire1 + 1;
+          document.getElementById("textVictoire1").textContent = `Nombre de victoire ${compteur_victoire1}`;
+          victoire_boolean = true;
+        }
+        else if (countJaune >= 4) {
+          alert(`Victoire de ${name2}`);
+          compteur_victoire2 = compteur_victoire2 + 1;
+          document.getElementById("textVictoire2").textContent = `Nombre de victoire ${compteur_victoire2}`;
+          victoire_boolean = true;
+        }
+      }
+    }
+
+    //Test verticale
+    countRouge = 0;
+    countJaune = 0;
+    for (let i = 0; i <= nbColonnes - 1; i++) {
+    for (let j = 0; j <= nbLignes - 1; j++) {
+        countRouge = (grille[i][j] == "rouge") ? countRouge + 1 : 0;
+        countJaune = (grille[i][j] == "jaune") ? countJaune + 1 : 0;
+        if (countRouge >= 4) {
+          alert(`Victoire de ${name1}`);
+          compteur_victoire1 = compteur_victoire1 + 1;
+          document.getElementById("textVictoire1").textContent = `Nombre de victoire ${compteur_victoire1}`;
+          victoire_boolean = true;
+        }
+        else if (countJaune >= 4) {
+          alert(`Victoire de ${name2}`);
+          compteur_victoire2 = compteur_victoire2 + 1;
+          document.getElementById("textVictoire2").textContent = `Nombre de victoire ${compteur_victoire2}`;
+          victoire_boolean = true;
+        }
+      }
+    }
+
+
+    for (var i = 0; i <= nbColonnes - 1; i++) {
+      for (var j = 0; j <= nbLignes - 1; j++) {
+        //Test diagonale
+        if (grille[i][j] == grille[i + 1][j + 1] && grille[i][j] != "noir") {
+          if (grille[i + 1][j + 1] == grille[i + 2][j + 2] && grille[i + 2][j + 2] == grille[i + 3][j + 3]) {
+            if (grille[i][j] == "rouge") {
+              alert(`Victoire de ${name1}`);
+              compteur_victoire1 = compteur_victoire1 + 1;
+              document.getElementById("textVictoire1").textContent = `Nombre de victoire ${compteur_victoire1}`;
+              victoire_boolean = true;
+            }
+            else {
+              alert(`Victoire de ${name2}`);
+              compteur_victoire2 = compteur_victoire2 + 1;
+              document.getElementById("textVictoire2").textContent = `Nombre de victoire ${compteur_victoire2}`;
+              victoire_boolean = true;
+            }
+          }
+        }
+        //Test diagonale inversée
+        if (grille[i][j] == grille[i + 1][j - 1] && grille[i][j] != "noir") {
+          if (grille[i + 1][j - 1] == grille[i + 2][j - 2] && grille[i + 2][j - 2] == grille[i + 3][j - 3]) {
+            if (grille[i][j] == "rouge") {
+              alert(`Victoire de ${name1}`);
+              compteur_victoire1 = compteur_victoire1 + 1;
+              document.getElementById("textVictoire1").textContent = `Nombre de victoire ${compteur_victoire1}`;
+              victoire_boolean = true;
+            }
+            else {
+              alert(`Victoire de ${name2}`);
+              compteur_victoire2 = compteur_victoire2 + 1;
+              document.getElementById("textVictoire2").textContent = `Nombre de victoire ${compteur_victoire2}`;
+              victoire_boolean = true;
+            }
+          }
+        }
+      }
+    }
+  }
+</script>
+
+</html>
